@@ -16,10 +16,7 @@ class ContainRule(RuleBase):
         self.reverse = reverse
 
     def check(self, obj) -> bool:
-        if self.reverse:
-            return obj in self.target
-        else:
-            return self.target in obj
+        return obj in self.target if self.reverse else self.target in obj
 
 
 class NotRule(RuleBase):

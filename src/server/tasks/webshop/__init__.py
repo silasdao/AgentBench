@@ -117,16 +117,8 @@ class WebShop(Task):
             def f(output):
                 output = [x for x in output if x]
                 if key == "history":
-                    return (
-                        sum([len(x[key]) for x in output]) / len(output)
-                        if len(output) > 0
-                        else 0
-                    )
-                return (
-                    sum([x[key] for x in output]) / len(output)
-                    if len(output) > 0
-                    else 0
-                )
+                    return sum(len(x[key]) for x in output) / len(output) if output else 0
+                return sum(x[key] for x in output) / len(output) if output else 0
 
             return f
 

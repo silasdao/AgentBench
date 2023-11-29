@@ -10,21 +10,19 @@ import sys
 class Agent(AIClient):
     def __init__(self, client, stage, order, save_dir) -> None:
         super().__init__()
-        
+
         self.client = client
         self.stage = stage
         self.order = order
         self.save_dir = save_dir
-        
+
         self.history = []
         self.assert_history = []
-        
+
         self.name_to_id = {"spray": 1, "flame": 2, "eel": 3, "sunfish": 4, "barracuda": 5, "mobula": 6, "octopus": 8, "whiteshark": 9, "hammerhead": 10}
-        self.id_to_name = {}
-        for name, id in self.name_to_id.items():
-            self.id_to_name[id] = name
+        self.id_to_name = {id: name for name, id in self.name_to_id.items()}
         self.id_to_name[-1] = "unknown"
-        
+
         # add "0": 1, "1": 2, "2": 3,
         for i in range(11):
             self.name_to_id[str(i)] = i+1
@@ -32,9 +30,9 @@ class Agent(AIClient):
         self.action_type = {'normal': 0, 'active': 1}
         self.skill_type = {'skill_type.aoe': 'AOE', 'skill_type.infight': 'Infight', 'skill_type.crit': 'Crit', 'skill_type.subtle': 'Subtle', 'skill_type.normalattack': 'Normal'}
         self.passive_type = {'passive_type.counter': 'Counter', 'passive_type.deflect': 'Deflect', 'passive_type.reduce': 'Reduce', 'passive_type.heal': 'Heal', 'passive_type.explode': 'Explode'}
-        
+
         logging.basicConfig(format='%(asctime)s %(message)s',filename='../log.txt', level=logging.INFO)
-        
+
         self.known_enemy = []
         self.guess_try_times = 5
         self.action_try_times = 5
@@ -63,7 +61,7 @@ class Agent(AIClient):
 
             # verify output
             assert guess_type in enemy_fish # TODO:
-            assert int(target_position) in self.get_enemy_living_fishes()
+            assert target_position in self.get_enemy_living_fishes()
 
             return True
 
@@ -72,9 +70,9 @@ class Agent(AIClient):
 
     def _decode_guess(self, output):
         pattern = r"\{[\w\W]*?\}"
-        results = [res.replace('\'', '"') for res in re.findall(pattern, output)]
-
-        if results:
+        if results := [
+            res.replace('\'', '"') for res in re.findall(pattern, output)
+        ]:
             for res in results:
                 try:
                     move = json.loads(res)
@@ -90,11 +88,7 @@ class Agent(AIClient):
 
     # 取出目标的position list
     def _non_zero_indexes(self, lst):
-        result = []
-        for i in range(len(lst)):
-            if lst[i] != 0:
-                result.append(i)
-        return result
+        return [i for i in range(len(lst)) if lst[i] != 0]
 
     def _guess(self, game):
         for ix in range(self.guess_try_times):
@@ -120,16 +114,18 @@ class Agent(AIClient):
                     'SKILL_TYPE': 'None'
                 }
 
-            trigger_passive = {}
-            for _pos, _type in zip(my_action.enemy_passives_id, my_action.enemy_types):
-                trigger_passive['Position: ' + str(_pos)] = self.passive_type[str(_type)]
-
+            trigger_passive = {
+                f'Position: {str(_pos)}': self.passive_type[str(_type)]
+                for _pos, _type in zip(
+                    my_action.enemy_passives_id, my_action.enemy_types
+                )
+            }
             for _pos, _type in zip(enemy_action.friend_passives_id, enemy_action.friend_types):
-                trigger_passive['Position: ' + str(_pos)] = self.passive_type[str(_type)]
+                trigger_passive[f'Position: {str(_pos)}'] = self.passive_type[str(_type)]
 
             live_enemy = self.get_enemy_living_fishes()
             live_enemy.sort()
-            live_enemy = [str(i) for i in live_enemy if not i in self.known_enemy]
+            live_enemy = [str(i) for i in live_enemy if i not in self.known_enemy]
 
             prompt = guess_prompt % (my_assert.assertResult, live_enemy, enemy_action_str, json.dumps(trigger_passive, ensure_ascii=False))
 
@@ -158,10 +154,7 @@ class Agent(AIClient):
         return (-1, -1)
 
     def Assert(self, game: Game) -> Tuple[int, int]:
-        if self.stage == 1:
-            return (-1, -1)
-        else:
-            return self._guess(game)
+        return (-1, -1) if self.stage == 1 else self._guess(game)
 
     def _get_current_state(self, game: Game):
         my_fish = [{'pos': pos, 'id': abs(self.get_my_id(pos)), 'hp': self.get_my_hp(pos), 'atk': self.get_my_atk(pos)} for pos in range(4)]
@@ -172,15 +165,16 @@ class Agent(AIClient):
 
         ret = "You\nPOSITION,ID,HP,ATK,\n"
         for fish in my_fish:
-            x = {}
-            x["POSITION"] = str(fish["pos"])
-            x["ID"] = self.id_to_name[fish["id"]]
-            x["HP"] = str(fish["hp"])
-            x["ATK"] = str(fish["atk"])
+            x = {
+                "POSITION": str(fish["pos"]),
+                "ID": self.id_to_name[fish["id"]],
+                "HP": str(fish["hp"]),
+                "ATK": str(fish["atk"]),
+            }
             state["You"].append(x)
 
-            for item in x:
-                ret += str(x[item]) + ","
+            for value in x.values():
+                ret += f"{str(value)},"
             ret += "\n"
 
         ret += "Enemy\nPOSITION,ID,HP,ATK,\n"
@@ -192,8 +186,8 @@ class Agent(AIClient):
             x["ATK"] = str(fish["atk"])
             state["Enemy"].append(x)
 
-            for item in x:
-                ret += str(x[item]) + ","
+            for value_ in x.values():
+                ret += f"{str(value_)},"
             ret += "\n"
 
         return json.dumps(state, ensure_ascii=False), ret
@@ -214,16 +208,16 @@ class Agent(AIClient):
 
             if action == 'active':
                 # verify target fish
-                if pick_fish == 'spray' or pick_fish == 'eel':
+                if pick_fish in ['spray', 'eel']:
                     move['target_position'] = '0'
-                elif pick_fish == "flame" or pick_fish == "sunfish":
+                elif pick_fish in ["flame", "sunfish"]:
                     assert target_position in self.get_my_living_fishes()
                     assert target_position != pos
-                elif pick_fish == "mobula" or pick_fish == "octopus":
+                elif pick_fish in ["mobula", "octopus"]:
                     assert target_position in self.get_my_living_fishes()
                 elif pick_fish == "barracuda":
                     assert target_position in self.get_enemy_living_fishes()
-                elif pick_fish == "whiteshark" or pick_fish == "hammerhead":
+                elif pick_fish in ["whiteshark", "hammerhead"]:
                     assert target_position in self.get_enemy_living_fishes() # FIXME: check for lowerest HP
                 else:
                     raise
@@ -239,9 +233,9 @@ class Agent(AIClient):
         status = 2  # validation failed
 
         pattern = r"\{[\w\W]*?\}"
-        results = [res.replace('\'', '"') for res in re.findall(pattern, output)]
-
-        if results:
+        if results := [
+            res.replace('\'', '"') for res in re.findall(pattern, output)
+        ]:
             for res in results:
                 try:
                     move = json.loads(res)
@@ -333,7 +327,7 @@ class Agent(AIClient):
             else:
                 results.append(success)
 
-        self.client.send_message("#[ERROR]" + str(min(results)))
+        self.client.send_message(f"#[ERROR]{str(min(results))}")
 
         return False, ''
 

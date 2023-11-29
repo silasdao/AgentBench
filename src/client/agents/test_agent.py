@@ -8,4 +8,4 @@ class CountHistoryAgent(AgentClient):
         super().__init__(*args, **kwargs)
 
     def inference(self, history: List[dict]) -> str:
-        return "I received {} items in history.".format(len(history))
+        return f"I received {len(history)} items in history."

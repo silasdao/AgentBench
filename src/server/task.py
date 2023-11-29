@@ -76,7 +76,7 @@ class Session:
             for sub_item in item:
                 self.inject(sub_item)
         else:
-            raise TypeError("Unsupported type %s" % type(item))
+            raise TypeError(f"Unsupported type {type(item)}")
 
     def clear(self):
         self.history = []
@@ -124,7 +124,7 @@ class Session:
                 break
             return_messages.append(message)
 
-        if len(return_messages) > 0 and return_messages[-1].role == "user":
+        if return_messages and return_messages[-1].role == "user":
             return_messages.pop()
 
         instruction = messages[0].content

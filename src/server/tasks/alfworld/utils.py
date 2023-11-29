@@ -13,8 +13,9 @@ def bleu_score(reference, candidate):
     candidate_tokens = candidate.split()
 
     smoothie = SmoothingFunction().method4
-    score = sentence_bleu([reference_tokens], candidate_tokens, smoothing_function=smoothie)
-    return score
+    return sentence_bleu(
+        [reference_tokens], candidate_tokens, smoothing_function=smoothie
+    )
 
 def process_ob(ob):
     if ob.startswith('You arrive at loc '):
@@ -24,8 +25,7 @@ def process_ob(ob):
 def process_action(action, choices, limit=0.01, to_print=False):
     if to_print:
         print("preprocess action: ", action)
-    match = re.search("ACTION:(.*)", action)
-    if match:
+    if match := re.search("ACTION:(.*)", action):
         action = match.group(1)
     else:
         return False

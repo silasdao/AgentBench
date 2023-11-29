@@ -207,7 +207,6 @@ class HTTPAgent(AgentClient):
                 raise e
             except Exception as e:
                 print("Warning: ", e)
-                pass
             else:
                 resp = resp.json()
                 return self.return_format.format(response=resp)

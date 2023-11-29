@@ -184,9 +184,10 @@ class TaskWorker:
     async def cancel_all(self):
         async with self.session_lock:
             sessions = list(self.session_map.keys())
-            cancelling = []
-            for session_id in sessions:
-                cancelling.append(self.cancel(CancelRequest(session_id=session_id)))
+            cancelling = [
+                self.cancel(CancelRequest(session_id=session_id))
+                for session_id in sessions
+            ]
         await asyncio.gather(*cancelling)
 
     async def cancel(self, parameters: CancelRequest):

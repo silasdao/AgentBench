@@ -167,7 +167,7 @@ class FastChatAgent(AgentClient):
         for _ in range(3):
             try:
                 response = requests.post(
-                    controller_addr + "/worker_generate_stream",
+                    f"{controller_addr}/worker_generate_stream",
                     headers=headers,
                     json=gen_params,
                     stream=True,
@@ -181,7 +181,6 @@ class FastChatAgent(AgentClient):
                             raise AgentNetworkException(data["text"])
                         text = data["text"]
                 return text
-            # if timeout or connection error, retry
             except Timeout:
                 print("Timeout, retrying...")
             except ConnectionError:

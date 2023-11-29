@@ -82,9 +82,7 @@ class KnowledgeGraph(Task):
             data_object = json.load(f)
         for item in data_object:
             answer = item.pop("answer")
-            gold_answer = set()
-            for a in answer:
-                gold_answer.add(a["answer_argument"])
+            gold_answer = {a["answer_argument"] for a in answer}
             self.data.append((item, gold_answer))  # input and target
             self.inputs.append(item)
             self.targets.append(gold_answer)
@@ -176,8 +174,14 @@ class KnowledgeGraph(Task):
                 session.inject({"role": "user", "content": shot})
             else:
                 session.inject({"role": "agent", "content": shot})
-        session.inject({"role": "user",
-                        "content": "A new question: " + question + "\nEntities: " + f"[{', '.join([entity for entity in entities])}]"})
+        session.inject(
+            {
+                "role": "user",
+                "content": f"A new question: {question}"
+                + "\nEntities: "
+                + f"[{', '.join(list(entities))}]",
+            }
+        )
 
         finish_reason = SampleStatus.COMPLETED
         for i in range(self.round):
@@ -191,8 +195,9 @@ class KnowledgeGraph(Task):
             message = message.replace("\\_", "_")
             session.history[-1].content = message
 
-            final_answer = re.findall(r'(?:Find|Final) Answer: #(\d+)', message)
-            if final_answer:
+            if final_answer := re.findall(
+                r'(?:Find|Final) Answer: #(\d+)', message
+            ):
                 try:
                     answer_variable = variables_list[int(final_answer[0])]
                 except IndexError:
@@ -213,9 +218,9 @@ class KnowledgeGraph(Task):
                         for function_name in function_names:
                             try:
                                 func = getattr(sys.modules[__name__], function_name)
-                                matches = re.findall(r'{}\((.+?)\)'.format(function_name), line)
+                                matches = re.findall(f'{function_name}\((.+?)\)', line)
                                 arguments = re.split(r'\s*,\s*', matches[0])
-                                ori_arguments = [argument for argument in arguments]
+                                ori_arguments = list(arguments)
                                 for i, argument in enumerate(arguments):
                                     argument = argument.replace("variable ", "")
                                     argument = argument.replace("Variable ", "")

@@ -46,9 +46,8 @@ VALIDATION_MAP_FUNC = {
     "Context Limit Exceeded": lambda x: x["AGENT_CONTEXT_LIMIT"],
     "Invalid Format": lambda x: x["AGENT_VALIDATION_FAILED"],
     "Invalid Action": lambda x: x["AGENT_INVALID_ACTION"],
-    # Not in above list
     "Task Limit Exceeded": lambda x: sum(
-        [x[t] for t in x if t in ["UNKNOWN", "TASK_ERROR", "TASK_LIMIT_REACHED"]]
+        x[t] for t in x if t in ["UNKNOWN", "TASK_ERROR", "TASK_LIMIT_REACHED"]
     ),
 }
 
@@ -93,11 +92,11 @@ def analyze_output(config: str, output: str, since_timestamp: float):
             agent = pattern[-2]
             task = pattern[-1]
             ct = os.path.getmtime(os.path.join(root, "overall.json"))
-            if agent not in agents:
-                continue
-            elif task not in tasks:
-                continue
-            elif ct < since_timestamp:
+            if (
+                agent not in agents
+                or task not in tasks
+                or ct < since_timestamp
+            ):
                 continue
             agent = MODEL_MAP[agent]
             if agent in overall_dict and task in overall_dict[agent]:

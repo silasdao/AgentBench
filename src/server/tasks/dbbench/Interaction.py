@@ -84,7 +84,7 @@ class Container:
         except Exception as e:
             result = str(e)
         if len(result) > 800:
-            result = result[:800] + "[TRUNCATED]"
+            result = f"{result[:800]}[TRUNCATED]"
         return result
 
     def is_port_open(self, port) -> bool:

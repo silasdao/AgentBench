@@ -180,10 +180,7 @@ class OSInteraction(Task):
                 return None
             if type(script_obj) is str:
                 return "bash", script_obj
-            if "language" not in script_obj:
-                language = "bash"
-            else:
-                language = script_obj["language"]
+            language = "bash" if "language" not in script_obj else script_obj["language"]
             if "file" in script_obj:
                 with open(
                     os.path.join(script_root_dir, script_obj["file"]), encoding="utf-8"
@@ -265,31 +262,34 @@ class OSInteraction(Task):
         matches = []
         for item in self.data_config["files"]:
             path = item["problem_file"]
-            for file in glob.glob(path):
-                if file.endswith(".json") or file.endswith(".jsonl"):
-                    matches.append(
-                        {
-                            "problem_file": file,
-                            "script_dir": item["script_dir"],
-                            "index_prefix": item["index_prefix"]
-                            + os.path.basename(file)
-                            .removesuffix(".json")
-                            .removesuffix(".jsonl")
-                            + "-",
-                        }
-                    )
+            matches.extend(
+                {
+                    "problem_file": file,
+                    "script_dir": item["script_dir"],
+                    "index_prefix": item["index_prefix"]
+                    + os.path.basename(file)
+                    .removesuffix(".json")
+                    .removesuffix(".jsonl")
+                    + "-",
+                }
+                for file in glob.glob(path)
+                if file.endswith(".json") or file.endswith(".jsonl")
+            )
         self.data_config["files"] = matches
 
         for item in self.data_config["files"]:
             problem_file = item["problem_file"]
             single_file_configs = self._load_configs(problem_file, item["script_dir"])
-            dict_configs = {}
-            for idx, config in enumerate(single_file_configs):
-                dict_configs[item["index_prefix"] + "%05d" % idx] = {
+            dict_configs = {
+                item["index_prefix"]
+                + "%05d"
+                % idx: {
                     "file": problem_file,
                     "config": config,
                     "index": idx,
                 }
+                for idx, config in enumerate(single_file_configs)
+            }
             self.problem_configs.update(dict_configs)
 
     def calculate_overall(self, results: List[TaskOutput]) -> Dict[str, Any]:

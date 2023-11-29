@@ -46,7 +46,7 @@ def build_init_sql(entry):
         for col in row:
             item += "%s,"
             items_data += (col,)
-        item = item[:-1] + ")"
+        item = f"{item[:-1]})"
         items.append(item)
     items = ",".join(items)
     sql = f"""CREATE DATABASE IF NOT EXISTS `{name}`;
@@ -107,8 +107,7 @@ class DBBench(Task):
                     break
                 sql = res.group(1).strip()
                 sql = sql.replace("\n", " ")
-                response = container.execute(sql, db)
-                if response:
+                if response := container.execute(sql, db):
                     session.inject({"role": "user", "content": response})
                 else:
                     session.inject({"role": "user", "content": ""})
@@ -159,15 +158,12 @@ class DBBench(Task):
 
     def calculate_overall(self, results: List[TaskOutput]) -> Dict[str, Any]:
         metrics = self.metrics
-        ret = {}
         outputs = []
         answers = []
         for result in results:
             outputs.append(result.result)
             answers.append(self.dataset[result.index][1])
-        for key, func in metrics.items():
-            ret[key] = func(outputs, answers)
-        return ret
+        return {key: func(outputs, answers) for key, func in metrics.items()}
 
     @property
     def metrics(self) -> Dict[str, Callable[[List[Dict[str, Any]], List[str]], float]]:
@@ -228,14 +224,12 @@ class DBBench(Task):
 
         ret = {}
         for typ in types:
-            ret[typ + "_accuracy"] = factory(typ)
+            ret[f"{typ}_accuracy"] = factory(typ)
 
-        ret["overall_cat_accuracy"] = (
-            lambda inp, tar: sum(
-                [
-                    ret[typ + "_accuracy"](inp, tar)
-                    for typ in ("SELECT", "INSERT", "UPDATE")
-                ]
+        ret["overall_cat_accuracy"] = lambda inp, tar: (
+            sum(
+                ret[f"{typ}_accuracy"](inp, tar)
+                for typ in ("SELECT", "INSERT", "UPDATE")
             )
             / 3
         )

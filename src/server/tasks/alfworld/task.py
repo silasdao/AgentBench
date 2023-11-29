@@ -148,7 +148,7 @@ class ALFWorld(Task):
     @staticmethod
     def get_available_actions(actions):
         actions = "\n".join(actions)
-        return " AVAILABLE ACTIONS: " + actions + "\n"
+        return f" AVAILABLE ACTIONS: {actions}" + "\n"
 
     async def alfworld_run(self, session: Session, env: Any):
         finish_reason = SampleStatus.COMPLETED
@@ -156,11 +156,6 @@ class ALFWorld(Task):
         ob, info = env.reset()
         ob = '\n'.join(ob[0].split('\n\n')[1:])
         name = '/'.join(info['extra.gamefile'][0].split('/')[-3:-1])
-        # history = self.get_prompt(name)
-        # add instruction
-        # history[0] = self.get_task_instruction() + "Here is one example.\n" + history[0]
-        # self.inject_info(session, history)
-        log_info = {"log": []}
         session.inject({"role": "user", "content": self.get_task_instruction()})
         session.inject(
             {"role": "agent", "content": "OK. I'll follow your instructions and try my best to solve the task."})
@@ -170,8 +165,10 @@ class ALFWorld(Task):
         history[0] = "Here is one example.\n" + history[0]
         self.inject_info(session, history)
 
-        init_prompt = "Here is your task. " + ob + self.get_available_actions(info.get('admissible_commands', [[]])[0])
-        log_info["init_prompt"] = init_prompt
+        init_prompt = f"Here is your task. {ob}" + self.get_available_actions(
+            info.get('admissible_commands', [[]])[0]
+        )
+        log_info = {"log": [], "init_prompt": init_prompt}
         session.inject({"role": "user", "content": init_prompt})
         # init 
         # for his in session.history:
