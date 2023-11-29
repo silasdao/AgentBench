@@ -13,21 +13,16 @@ class InstanceFactory(BaseModel):
 
     @validator("parameters", pre=True)
     def _ensure_dict(cls, v):
-        if v is None:
-            return {}
-        return v
+        return {} if v is None else v
 
     def create(self):
         # print('>>>>>>>> ', self.module, self.parameters)
         splits = self.module.split(".")
         if len(splits) == 0:
-            raise Exception("Invalid module name: {}".format(self.module))
+            raise Exception(f"Invalid module name: {self.module}")
         if len(splits) == 1:
             g = globals()
-            if self.module in g:
-                class_type = g[self.module]
-            else:
-                class_type = getattr(builtins, self.module)
+            class_type = g.get(self.module, getattr(builtins, self.module))
             return class_type(**self.parameters)
         else:
             path = ".".join(self.module.split(".")[:-1])

@@ -24,12 +24,12 @@ class Claude(AgentClient):
             self.api_args["stop_sequences"] = [anthropic.HUMAN_PROMPT]
 
     def inference(self, history: List[dict]) -> str:
-        prompt = ""
-        for message in history:
-            if message["role"] == "user":
-                prompt += anthropic.HUMAN_PROMPT + message["content"]
-            else:
-                prompt += anthropic.AI_PROMPT + message["content"]
+        prompt = "".join(
+            anthropic.HUMAN_PROMPT + message["content"]
+            if message["role"] == "user"
+            else anthropic.AI_PROMPT + message["content"]
+            for message in history
+        )
         prompt += anthropic.AI_PROMPT
         c = anthropic.Client(api_key=self.key)
         resp = c.completions.create(prompt=prompt, **self.api_args)

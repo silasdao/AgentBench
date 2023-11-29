@@ -19,20 +19,19 @@ def format_input_generation(
         dom_tree, id_mapping={}, keep_html_brackets=keep_html_brackets
     )
     candidate_nodes = dom_tree.xpath("//*[@backend_node_id]")
-    choices = []
-    for idx, node in enumerate(candidate_nodes):
-        choices.append(
-            [
-                node.attrib["backend_node_id"],
-                " ".join(
-                    get_tree_repr(
-                        node,
-                        id_mapping=id_mapping,
-                        keep_html_brackets=keep_html_brackets,
-                    )[0].split()[:10]
-                ),
-            ]
-        )
+    choices = [
+        [
+            node.attrib["backend_node_id"],
+            " ".join(
+                get_tree_repr(
+                    node,
+                    id_mapping=id_mapping,
+                    keep_html_brackets=keep_html_brackets,
+                )[0].split()[:10]
+            ),
+        ]
+        for node in candidate_nodes
+    ]
     gt = id_mapping.get(gt, -1)
     seq_input = (
         "Based on the HTML webpage above, try to complete the following task:\n"
@@ -54,10 +53,10 @@ def format_input_generation(
         seq_target = "None"
     else:
         current_action_op = sample["operation"]["op"]
-        current_action_value = sample["operation"]["value"]
         seq_target = f"Element: {choices[gt][1]}\n"
         seq_target += f"Action: {current_action_op}\n"
         if current_action_op != "CLICK":
+            current_action_value = sample["operation"]["value"]
             seq_target += f"Value: {current_action_value}"
     return tree_repr, seq_input, seq_target, choices
 
@@ -71,20 +70,19 @@ def format_input_multichoice(
         dom_tree, id_mapping={}, keep_html_brackets=keep_html_brackets
     )
     candidate_nodes = dom_tree.xpath("//*[@backend_node_id]")
-    choices = []
-    for idx, node in enumerate(candidate_nodes):
-        choices.append(
-            [
-                node.attrib["backend_node_id"],
-                " ".join(
-                    get_tree_repr(
-                        node,
-                        id_mapping=id_mapping,
-                        keep_html_brackets=keep_html_brackets,
-                    )[0].split()[:10]
-                ),
-            ]
-        )
+    choices = [
+        [
+            node.attrib["backend_node_id"],
+            " ".join(
+                get_tree_repr(
+                    node,
+                    id_mapping=id_mapping,
+                    keep_html_brackets=keep_html_brackets,
+                )[0].split()[:10]
+            ),
+        ]
+        for node in candidate_nodes
+    ]
     gt = id_mapping.get(gt, -1)
     seq_input = (
         "Based on the HTML webpage above, try to complete the following task:\n"
@@ -109,9 +107,9 @@ def format_input_multichoice(
     else:
         gt += 1
         current_action_op = sample["operation"]["op"]
-        current_action_value = sample["operation"]["value"]
         seq_target = f"{chr(65 + gt)}.\n" f"Action: {current_action_op}\n"
         if current_action_op != "CLICK":
+            current_action_value = sample["operation"]["value"]
             seq_target += f"Value: {current_action_value}"
     return tree_repr, seq_input, seq_target, choices
 
@@ -150,7 +148,7 @@ class MultiChoiceDataset(Dataset):
         else:
             top_negatives = []
             other_negatives = sample["neg_candidates"]
-        if random.random() < 0.8 and len(top_negatives) > 0:
+        if random.random() < 0.8 and top_negatives:
             neg_candidates = top_negatives
         else:
             neg_candidates = other_negatives
@@ -165,14 +163,6 @@ class MultiChoiceDataset(Dataset):
             )
             gt = pos_candidate["backend_node_id"]
             candidate_ids = [gt] + [c["backend_node_id"] for c in neg_candidate]
-            if self.mode == "multichoice":
-                seq_context, seq_in, seq_out, _ = format_input_multichoice(
-                    sample, candidate_ids, gt
-                )
-            else:
-                seq_context, seq_in, seq_out, _ = format_input_generation(
-                    sample, candidate_ids, gt
-                )
         else:
             neg_candidate = random.sample(
                 neg_candidates,
@@ -180,14 +170,14 @@ class MultiChoiceDataset(Dataset):
             )
             gt = -1
             candidate_ids = [c["backend_node_id"] for c in neg_candidate]
-            if self.mode == "multichoice":
-                seq_context, seq_in, seq_out, _ = format_input_multichoice(
-                    sample, candidate_ids, gt
-                )
-            else:
-                seq_context, seq_in, seq_out, _ = format_input_generation(
-                    sample, candidate_ids, gt
-                )
+        if self.mode == "multichoice":
+            seq_context, seq_in, seq_out, _ = format_input_multichoice(
+                sample, candidate_ids, gt
+            )
+        else:
+            seq_context, seq_in, seq_out, _ = format_input_generation(
+                sample, candidate_ids, gt
+            )
         seq_context = self.tokenizer(
             seq_context,
             truncation=True,

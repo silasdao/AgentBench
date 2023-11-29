@@ -75,7 +75,7 @@ class CardGame(Task):
         try:
             shutil.rmtree(directory)
         except Exception as e:
-            print("Failed to delete %s. Reason: %s" % (directory, e))
+            print(f"Failed to delete {directory}. Reason: {e}")
 
     # run for one round
     def get_data(self) -> List:
@@ -83,10 +83,10 @@ class CardGame(Task):
         for stage in [2]:
             for base in ["baseline1", "baseline2"]:
                 for agent in [0, 1]:
-                    for i in range(self.test_time):
-                        ret.append(
-                            ({"stage": stage, "base": base, "agent": agent}, None)
-                        )
+                    ret.extend(
+                        ({"stage": stage, "base": base, "agent": agent}, None)
+                        for _ in range(self.test_time)
+                    )
         return ret
 
     async def start_sample(self, index, session: Session) -> TaskSampleExecutionResult:
@@ -98,8 +98,6 @@ class CardGame(Task):
         }
         # a round consist of 50 subrounds
         folder = self._random_string(16)
-        total = {}
-
         stage = data_item["stage"]
         base = data_item["base"]
         agent = data_item["agent"]
@@ -135,21 +133,12 @@ class CardGame(Task):
         print("task done")
         current_log = self.server.log[folder]
 
-        if agent == 0:
-            meta = {"ai1": "ai", "ai2": base}
-        else:
-            meta = {"ai1": base, "ai2": "ai"}
-
-        if "\"0\" : 0" in msg:
-            meta["winner"] = "1"
-        else:
-            meta["winner"] = "0"
-
-        with open(save_dir + "/meta.json", "w") as f:
+        meta = {"ai1": "ai", "ai2": base} if agent == 0 else {"ai1": base, "ai2": "ai"}
+        meta["winner"] = "1" if "\"0\" : 0" in msg else "0"
+        with open(f"{save_dir}/meta.json", "w") as f:
             f.write(json.dumps(meta))
         ret = calculate(result_dir=result_dir, agent=agent)
-        total[result_dir] = ret
-
+        total = {result_dir: ret}
         self._delete_dir(result_dir)
 
         status = self.server.status.get(folder, 0)

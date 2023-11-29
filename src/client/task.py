@@ -21,11 +21,11 @@ class TaskClient:
     ) -> None:
         self.name = name
         self.controller_address = controller_address
-        print("TaskClient created: {} ({})".format(name, controller_address))
+        print(f"TaskClient created: {name} ({controller_address})")
 
     def get_indices(self) -> List[SampleIndex]:
         result = requests.get(
-            self.controller_address + "/get_indices", params={"name": self.name}
+            f"{self.controller_address}/get_indices", params={"name": self.name}
         )
         if result.status_code != 200:
             raise AgentBenchException(result.text, result.status_code, self.name)
@@ -33,9 +33,7 @@ class TaskClient:
 
     def get_concurrency(self) -> int:
         try:
-            result = requests.get(
-                self.controller_address + "/list_workers"
-            )
+            result = requests.get(f"{self.controller_address}/list_workers")
         except Exception as e:
             print(ColorMessage.yellow(f"Warning task {self.name} cannot connect to controller {e}"))
             return 0
@@ -45,16 +43,16 @@ class TaskClient:
         if self.name not in result:
             print(ColorMessage.yellow(f"task {self.name} not found in worker list"))
             return 0
-        concurrency = 0
-        for worker in result[self.name]["workers"].values():
-            if worker["status"] == WorkerStatus.ALIVE:
-                concurrency += worker["capacity"] - worker["current"]
-        return concurrency
+        return sum(
+            worker["capacity"] - worker["current"]
+            for worker in result[self.name]["workers"].values()
+            if worker["status"] == WorkerStatus.ALIVE
+        )
 
     def run_sample(self, index: SampleIndex, agent: AgentClient) -> TaskClientOutput:
         try:
             result = requests.post(
-                self.controller_address + "/start_sample",
+                f"{self.controller_address}/start_sample",
                 json=StartSampleRequest(name=self.name, index=index).dict(),
             )
         except Exception as e:
@@ -85,7 +83,7 @@ class TaskClient:
                     model_name = agent.__class__.__name__
                 print(f"ERROR: {model_name}/{self.name} agent error", e)
                 requests.post(
-                    self.controller_address + "/cancel",
+                    f"{self.controller_address}/cancel",
                     json=CancelRequest(session_id=sid).dict(),
                 )
                 return TaskClientOutput(
@@ -96,7 +94,7 @@ class TaskClient:
 
             try:
                 result = requests.post(
-                    self.controller_address + "/interact",
+                    f"{self.controller_address}/interact",
                     json=InteractRequest(
                         session_id=sid,
                         agent_response=response,
@@ -110,7 +108,7 @@ class TaskClient:
                 )
             if result.status_code != 200:
                 requests.post(
-                    self.controller_address + "/cancel",
+                    f"{self.controller_address}/cancel",
                     json=CancelRequest(session_id=sid).dict(),
                 )
                 return TaskClientOutput(
@@ -131,20 +129,20 @@ class TaskClient:
         for s in SampleStatus:
             statistics[s] /= len(results)
         statistics["average_history_length"] = sum(
-            [len(result.history) for result in results]
+            len(result.history) for result in results
         ) / len(results)
         statistics["max_history_length"] = max(
-            [len(result.history) for result in results]
+            len(result.history) for result in results
         )
         statistics["min_history_length"] = min(
-            [len(result.history) for result in results]
+            len(result.history) for result in results
         )
         ret = {
             "total": len(results),
             "validation": statistics,
         }
         res = requests.post(
-            self.controller_address + "/calculate_overall",
+            f"{self.controller_address}/calculate_overall",
             json=CalculateOverallRequest(name=self.name, results=results).dict(),
         )
         if res.status_code != 200:

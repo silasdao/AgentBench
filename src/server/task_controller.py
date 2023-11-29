@@ -449,14 +449,12 @@ class TaskController:
             self.tasks_lock.release()
             raise HTTPException(400, "Error: No workers available")
         async with target_worker.lock.handle(self.tasks_lock):
-            result = await self._call_worker(
+            return await self._call_worker(
                 data.name,
                 target_worker.id,
                 "/calculate_overall",
                 data.dict(),
             )
-
-            return result
 
     async def _sync_worker_status(self, name: str, worker_id: int) -> bool:
         print(f"syncing {name} task worker {worker_id}")

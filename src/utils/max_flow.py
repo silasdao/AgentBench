@@ -27,14 +27,10 @@ class MaxFlow:
     def __init__(self, graph: Graph, src: int, dst: int) -> None:
         assert (
             graph.node_count > src >= 0
-        ), "src node out of range, expected [0, {}), got {}".format(
-            graph.node_count, src
-        )
+        ), f"src node out of range, expected [0, {graph.node_count}), got {src}"
         assert (
             graph.node_count > dst >= 0
-        ), "dst node out of range, expected [0, {}), got {}".format(
-            graph.node_count, dst
-        )
+        ), f"dst node out of range, expected [0, {graph.node_count}), got {dst}"
 
         self.src = src
         self.dst = dst
@@ -63,7 +59,7 @@ class MaxFlow:
             augmenting_path = self.find_augmenting_path()
             if not augmenting_path:
                 break
-            bottleneck = min([edge.capacity - edge.flow for edge in augmenting_path])
+            bottleneck = min(edge.capacity - edge.flow for edge in augmenting_path)
             for edge in augmenting_path:
                 edge.flow += bottleneck
                 self.edges_dict[(edge.to_node, edge.from_node)].flow -= bottleneck

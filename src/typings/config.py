@@ -53,8 +53,7 @@ class AssignmentConfig(BaseModel):
             if isinstance(task, str):
                 task = [task]
             for a in agent:
-                for t in task:
-                    ret.append(Assignment(agent=a, task=t))
+                ret.extend(Assignment(agent=a, task=t) for t in task)
         return ret
 
     @validator("output", pre=True)
@@ -95,8 +94,8 @@ class AssignmentConfig(BaseModel):
             ), f"Concurrency of {task} is not specified."
 
         def remove_unused(
-            target: Union[DefinitionConfig, ConcurrencyConfig], warning_suffix: str
-        ):
+                target: Union[DefinitionConfig, ConcurrencyConfig], warning_suffix: str
+            ):
             nonlocal agent_in_assignment, task_in_assignment
             removed_agents = set()
             removed_tasks = set()
@@ -109,7 +108,7 @@ class AssignmentConfig(BaseModel):
                 if definition_task not in task_in_assignment:
                     removed_tasks.add(definition_task)
 
-            if len(removed_agents) > 0 or len(removed_tasks) > 0:
+            if removed_agents or removed_tasks:
 
                 print(
                     ColorMessage.yellow(

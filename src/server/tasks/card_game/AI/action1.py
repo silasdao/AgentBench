@@ -9,9 +9,7 @@ class AI(AIClient):
         super().__init__()
         self.stage = stage
         self.name_to_id = {"spray": 1, "flame": 2, "eel": 3, "sunfish": 4, "barracuda": 5, "mobula": 6, "octopus": 8, "whiteshark": 9, "hammerhead": 10}
-        self.id_to_name = {}
-        for name, id in self.name_to_id.items():
-            self.id_to_name[id] = name
+        self.id_to_name = {id: name for name, id in self.name_to_id.items()}
         self.id_to_name[-1] = "unknown"
         self.ai_fish = []
         random.seed(42)

@@ -117,11 +117,9 @@ class Assigner:
                         )
 
         count = sum(
-            [
-                len(self.remaining_tasks[agent][task])
-                for agent in self.remaining_tasks
-                for task in self.remaining_tasks[agent]
-            ]
+            len(self.remaining_tasks[agent][task])
+            for agent in self.remaining_tasks
+            for task in self.remaining_tasks[agent]
         )
         print(
             ColorMessage.cyan(f"Message: {count} samples remaining.")
@@ -131,10 +129,8 @@ class Assigner:
             agent_ = json.dumps(agent)
             tasks_ = len(self.remaining_tasks[agent])
             samples_ = sum(
-                [
-                    len(self.remaining_tasks[agent][task])
-                    for task in self.remaining_tasks[agent]
-                ]
+                len(self.remaining_tasks[agent][task])
+                for task in self.remaining_tasks[agent]
             )
             if samples_ == 0:
                 continue
@@ -179,14 +175,15 @@ class Assigner:
             with self.assignment_lock:
                 for task in self.tasks:
                     self.free_worker.task[task] = self.tasks[task].get_concurrency()
-                print("Running Count: {}".format(self.running_count))
+                print(f"Running Count: {self.running_count}")
 
             # Step 1. init edges: SRC -> agent -> task -> DST
 
             with self.assignment_lock:
-                edges = {}
-                for agent in self.agents:
-                    edges[(0, agent_node_index[agent])] = self.free_worker.agent[agent]
+                edges = {
+                    (0, agent_node_index[agent]): self.free_worker.agent[agent]
+                    for agent in self.agents
+                }
                 for task in self.tasks:
                     edges[(task_node_index[task], 1)] = self.free_worker.task[task]
                 tot_remaining_samples = 0
@@ -199,9 +196,8 @@ class Assigner:
             if tot_remaining_samples == 0:
                 if self.running_count == 0:
                     break
-                else:
-                    time.sleep(interval / 2 + random.random() * interval)
-                    continue
+                time.sleep(interval / 2 + random.random() * interval)
+                continue
 
             # Step 2. Create graph and calculate max flow
 

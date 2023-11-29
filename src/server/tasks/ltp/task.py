@@ -315,7 +315,7 @@ class ZHPrompter(Prompter):
         ]
 
     def check_solver_valid(self, solver):
-        return not ("感谢" in solver or "谢谢" in solver or "再见" in solver)
+        return "感谢" not in solver and "谢谢" not in solver and "再见" not in solver
 
     def solver_hint_invalid(self):
         return "请你继续根据汤面猜测汤底的信息，提出一个可以用“是”或“否”或“无关”回答的问题。"
@@ -397,41 +397,51 @@ class LateralThinkingPuzzle(Task):
         outputs = [result.result for result in results]
         # adapt from self.metrics
         return {
-            "main": sum([output["progress"] for output in outputs if output])
-            / len(outputs),
-            "SGA": sum([output["accuracy"] for output in outputs if output])
-            / len(outputs),
-            "RE": sum([output["efficiency"] for output in outputs if output])
-            / len(outputs),
-            "QR": sum([output["relevance"] for output in outputs if output])
-            / len(outputs),
-            "GP": sum([output["progress"] for output in outputs if output])
-            / len(outputs),
+            "main": (
+                sum(output["progress"] for output in outputs if output)
+                / len(outputs)
+            ),
+            "SGA": (
+                sum(output["accuracy"] for output in outputs if output)
+                / len(outputs)
+            ),
+            "RE": (
+                sum(output["efficiency"] for output in outputs if output)
+                / len(outputs)
+            ),
+            "QR": (
+                sum(output["relevance"] for output in outputs if output)
+                / len(outputs)
+            ),
+            "GP": (
+                sum(output["progress"] for output in outputs if output)
+                / len(outputs)
+            ),
         }
 
     @property
     def metrics(self):
         return {
-            "main": lambda outputs, targets: sum(
-                [output["progress"] for output in outputs if output]
-            )
-            / len([output["accuracy"] for output in outputs if output]),
-            "SGA": lambda outputs, targets: sum(
-                [output["accuracy"] for output in outputs if output]
-            )
-            / len([output["accuracy"] for output in outputs if output]),
-            "RE": lambda outputs, targets: sum(
-                [output["efficiency"] for output in outputs if output]
-            )
-            / len([output["accuracy"] for output in outputs if output]),
-            "QR": lambda outputs, targets: sum(
-                [output["relevance"] for output in outputs if output]
-            )
-            / len([output["accuracy"] for output in outputs if output]),
-            "GP": lambda outputs, targets: sum(
-                [output["progress"] for output in outputs if output]
-            )
-            / len([output["accuracy"] for output in outputs if output]),
+            "main": lambda outputs, targets: (
+                sum(output["progress"] for output in outputs if output)
+                / len([output["accuracy"] for output in outputs if output])
+            ),
+            "SGA": lambda outputs, targets: (
+                sum(output["accuracy"] for output in outputs if output)
+                / len([output["accuracy"] for output in outputs if output])
+            ),
+            "RE": lambda outputs, targets: (
+                sum(output["efficiency"] for output in outputs if output)
+                / len([output["accuracy"] for output in outputs if output])
+            ),
+            "QR": lambda outputs, targets: (
+                sum(output["relevance"] for output in outputs if output)
+                / len([output["accuracy"] for output in outputs if output])
+            ),
+            "GP": lambda outputs, targets: (
+                sum(output["progress"] for output in outputs if output)
+                / len([output["accuracy"] for output in outputs if output])
+            ),
         }
 
     async def start_sample(

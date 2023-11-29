@@ -84,13 +84,7 @@ class Mind2Web(Task):
         return self.metric(outputs, targets)
 
     def metric(self, output: List[Dict], target: List[Dict]):
-        prediction = []
-        for x in output:
-            prediction.append(x["final_prediction"])
-            # if x is not None:
-            #     prediction.append(x['final_prediction'])
-            # else:
-            #     prediction.append(None)
+        prediction = [x["final_prediction"] for x in output]
         all_element_acc, all_action_f1, all_step_sr = [], [], []
         assert len(target) == len(prediction)
         for pred, tar in zip(prediction, target):
@@ -107,12 +101,11 @@ class Mind2Web(Task):
                 all_step_sr.append(1)
             else:
                 all_step_sr.append(0)
-        overall = {
+        return {
             "element_acc": sum(all_element_acc) / len(all_element_acc) * 100,
             "action_f1": np.mean(all_action_f1) * 100,
             "step_sr": np.mean(all_step_sr) * 100,
         }
-        return overall
 
     def get_data(self):
         ret = []
@@ -124,7 +117,7 @@ class Mind2Web(Task):
                 pos_ids = [c["backend_node_id"] for c in pos_candidates]
                 sample.pop("pos_candidates")
                 sample["pos_ids"] = pos_ids
-                if len(pos_ids) == 0:
+                if not pos_ids:
                     ret.append((sample, None))
                     continue
                 _, _, target_out, _ = format_input_multichoice(
@@ -140,14 +133,16 @@ class Mind2Web(Task):
         for k in [5, 10, 20, 50]:
             recall_at_k = np.mean(
                 [
-                    1 if any([c["rank"] < k for c in sample["pos_candidates"]]) else 0
+                    1
+                    if any(c["rank"] < k for c in sample["pos_candidates"])
+                    else 0
                     for sample in test_dataset.data
                 ]
             )
             print(f"Recall Cap @ {k}: {recall_at_k}")
         acc = np.mean(
             [
-                1 if any([c["rank"] == 0 for c in sample["pos_candidates"]]) else 0
+                1 if any(c["rank"] == 0 for c in sample["pos_candidates"]) else 0
                 for sample in test_dataset.data
             ]
         )
@@ -220,7 +215,7 @@ class Mind2Web(Task):
         action = action.group(1) if action is not None else ""
         value = re.search(r"Value: (.*)$", text, re.MULTILINE)
         value = value.group(1) if value is not None else ""
-        return selected_option, action.strip() + " " + value.strip()
+        return selected_option, f"{action.strip()} {value.strip()}"
 
     @staticmethod
     def postprocess_action_llm(text):
@@ -236,15 +231,15 @@ class Mind2Web(Task):
         action = action.group(1) if action is not None else ""
         value = re.search(r"Value: (.*)$", text, re.MULTILINE)
         value = value.group(1) if value is not None else ""
-        return selected_option, action.strip() + " " + value.strip()
+        return selected_option, f"{action.strip()} {value.strip()}"
 
     @staticmethod
     def calculate_f1(pred, label):
         pred = set(pred.strip().split())
         label = set(label.strip().split())
-        if len(pred) == 0 and len(label) == 0:
+        if not pred and not label:
             return 1
-        if len(pred) == 0 or len(label) == 0:
+        if not pred or not label:
             return 0
 
         tp = len(pred & label)
@@ -254,5 +249,4 @@ class Mind2Web(Task):
         recall = tp / (tp + fn)
         if precision == 0 or recall == 0:
             return 0
-        f1 = 2 * precision * recall / (precision + recall)
-        return f1
+        return 2 * precision * recall / (precision + recall)

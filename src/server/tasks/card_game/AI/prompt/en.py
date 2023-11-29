@@ -93,10 +93,7 @@ your_fish = ["spray", "flame", "eel", "sunfish"] # ["mobula", "octopus", "whites
 enemy_fish = ["spray", "flame", "eel", "sunfish"] # ["mobula", "octopus", "whiteshark", "hammerhead"]
 
 def get_fish_description(fish):
-    desc = {}
-    for i in fish:
-        desc[i] = fish_description[i]
-    return desc
+    return {i: fish_description[i] for i in fish}
 
 your_fish_description = get_fish_description(your_fish)
 enemy_fish_description = get_fish_description(enemy_fish)
